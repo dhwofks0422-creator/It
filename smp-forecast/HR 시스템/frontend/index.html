@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HR 인사평가 시스템 — 숙명여자대학교 캡스톤디자인</title>
+  <!-- Bootstrap 5 CSS CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  
+  <!-- Vue 3: 로컬 정적 파일 우선 로드, 실패 시 CDN 폴백 -->
+  <script src="/static/vue.global.js"></script>
+  <script>
+    if (typeof Vue === 'undefined') {
+      document.write('<script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"><\/script>');
+    }
+  </script>
+
+  <style>
+    :root {
+      --sidebar-width: 260px;
+      --primary-color: #0d6efd;
+      --primary-hover: #0b5ed7;
+      --bg-light: #f8fafc;
+      --card-border: #e2e8f0;
+    }
+    body {
+      background-color: var(--bg-light);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Pretendard", "Malgun Gothic", sans-serif;
+      color: #1e293b;
+      margin: 0;
+      padding: 0;
+    }
+    /* Layout */
+    .app-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+    .sidebar {
+      width: var(--sidebar-width);
+      background-color: #ffffff;
+      border-right: 1px solid var(--card-border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 1000;
+    }
+    .sidebar-brand {
+      padding: 1.25rem 1.2rem;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .sidebar-brand h5 {
+      margin: 0;
+      font-weight: 700;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .sidebar-user {
+      padding: 1rem 1.2rem;
+      background: #f8fafc;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .sidebar-menu {
+      flex: 1;
+      padding: 1rem 0.8rem;
+      overflow-y: auto;
+    }
+    .sidebar-menu .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.7rem 0.9rem;
+      color: #475569;
+      font-weight: 500;
+      border-radius: 0.5rem;
+      margin-bottom: 0.25rem;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+    .sidebar-menu .nav-link:hover {
+      background-color: #f1f5f9;
+      color: #0f172a;
+    }
+    .sidebar-menu .nav-link.active {
+      background-color: #e0e7ff;
+      color: #3730a3;
+      font-weight: 600;
+    }
+    .sidebar-footer {
+      padding: 1rem 1.2rem;
+      border-top: 1px solid var(--card-border);
+      background-color: #ffffff;
+    }
+    .content-area {
+      margin-left: var(--sidebar-width);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .top-header {
+      height: 60px;
+      background: #ffffff;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2rem;
+    }
+    .main-body {
+      padding: 2rem;
+      flex: 1;
+    }
+    /* Cards & Components */
+    .card {
+      border: 1px solid var(--card-border);
+      border-radius: 0.75rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+      margin-bottom: 1.5rem;
+    }
+    .card-header {
+      background-color: #ffffff;
+      border-bottom: 1px solid var(--card-border);
+      font-weight: 600;
+      padding: 1rem 1.25rem;
+    }
+    .table > :not(caption) > * > * {
+      padding: 0.85rem 1rem;
+      vertical-align: middle;
+    }
+    .badge {
+      font-weight: 600;
+      padding: 0.4em 0.65em;
+    }
+    /* Login Page */
+    .login-container {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+      padding: 1.5rem;
+    }
+    .login-box {
+      width: 100%;
+      max-width: 440px;
+      background: #ffffff;
+      border-radius: 1rem;
+      padding: 2.5rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+      border: 1px solid var(--card-border);
+    }
+    /* Toast */
+    .toast-container-fixed {
+      position: fixed;
+      top: 1.5rem;
+      right: 1.5rem;
+      z-index: 9999;
+    }
+    /* Modal backdrop fallback */
+    .custom-modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(15, 23, 42, 0.45);
+      backdrop-filter: blur(2px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      padding: 1rem;
+    }
+    .custom-modal {
+      background: #ffffff;
+      border-radius: 0.75rem;
+      width: 100%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+    }
+  </style>
+</head>
+<body>
+
+<div id="app">
+  <!-- 1. 전역 알림 토스트 -->
+  <div class="toast-container-fixed" v-if="toastMessage">
+    <div class="toast show align-items-center text-bg-primary border-0 shadow">
+      <div class="d-flex">
+        <div class="toast-body">
+          <i class="bi bi-info-circle me-2"></i>{{ toastMessage }}
+        </div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" @click="toastMessage = ''"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 로그인 화면 (로그인되지 않은 경우) -->
+  <div v-if="!currentUser" class="login-container">
+    <div class="login-box">
+      <div class="text-center mb-4">
+        <div class="d-inline-flex p-3 rounded-circle bg-primary bg-opacity-10 text-primary mb-3">
+          <i class="bi bi-person-badge fs-1"></i>
+        </div>
+        <h4 class="fw-bold text-dark">HR 인사평가 시스템</h4>
+        <p class="text-muted small">숙명여자대학교 IT와 비즈니스혁신 캡스톤디자인</p>
+      </div>
+
+      <div v-if="loginError" class="alert alert-danger py-2 small" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-1"></i> {{ loginError }}
+      </div>
+
+      <form @submit.prevent="handleLogin">
+        <div class="mb-3">
+          <label class="form-label small fw-bold">사번 (Employee ID)</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-person"></i></span>
+            <input type="text" class="form-control" v-model="loginForm.employee_id" placeholder="사번 입력 (예: ADMIN)" required autofocus>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold">비밀번호 (Password)</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+            <input type="password" class="form-control" v-model="loginForm.password" placeholder="비밀번호 입력" required>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 py-2 fw-bold" :disabled="isSubmitting">
+          <span v-if="isSubmitting" class="spinner-border spinner-border-sm me-1"></span>
+          로그인
+        </button>
+      </form>
+
+      <div class="mt-4 pt-3 border-top">
+        <div class="text-muted small mb-2 text-center fw-bold">빠른 테스트 계정 채우기</div>
+        <div class="d-grid gap-2">
+          <button type="button" class="btn btn-outline-secondary btn-sm text-start" @click="quickLogin('ADMIN', 'admin1234!')">
+            <span class="badge bg-dark me-1">관리자</span> ADMIN / admin1234!
+          </button>
+          <button type="button" class="btn btn-outline-secondary btn-sm text-start" @click="quickLogin('M001', '1234')">
+            <span class="badge bg-primary me-1">매니저</span> M001 (김팀장) / 1234
+          </button>
+          <button type="button" class="btn btn-outline-secondary btn-sm text-start" @click="quickLogin('E001', '1234')">
+            <span class="badge bg-success me-1">직원</span> E001 (이개발) / 1234
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. 메인 레이아웃 (로그인 완료 시) -->
+  <div v-else class="app-layout">
+    <!-- 왼쪽 사이드바 메뉴 -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <h5>
+          <i class="bi bi-pie-chart-fill text-primary"></i>
+          <span>HR 인사평가</span>
+        </h5>
+        <div class="text-muted" style="font-size: 0.72rem;">2026 IT·비즈니스혁신 캡스톤</div>
+      </div>
+
+      <!-- 현재 로그인 유저 프로필 카드 -->
+      <div class="sidebar-user">
+        <div class="d-flex align-items-center gap-2">
+          <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold" style="width: 36px; height: 36px;">
+            {{ (currentUser.name || 'U').charAt(0) }}
+          </div>
+          <div class="min-w-0">
+            <div class="fw-bold text-truncate" style="font-size: 0.9rem;">{{ currentUser.name }}</div>
+            <div class="d-flex align-items-center gap-1">
+              <span class="badge" :class="roleBadgeClass(currentUser.role)">{{ getRoleText(currentUser.role) }}</span>
+              <span class="text-muted small text-truncate">{{ currentUser.team_name || '전사' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 네비게이션 메뉴 (역할별) -->
+      <nav class="sidebar-menu">
+        <!-- 1) 관리자 (ADMIN) 메뉴 -->
+        <template v-if="currentUser.role === 'ADMIN'">
+          <div class="text-uppercase text-muted px-2 mb-2 fw-bold" style="font-size: 0.68rem; letter-spacing: 0.05em;">관리자 기능</div>
+          <a class="nav-link" :class="{active: currentTab === 'results'}" @click="currentTab = 'results'">
+            <i class="bi bi-clipboard2-data"></i>
+            <span>평가 현황 및 결과</span>
+          </a>
+          <a class="nav-link" :class="{active: currentTab === 'teams'}" @click="currentTab = 'teams'">
+            <i class="bi bi-building"></i>
+            <span>팀 관리 (보너스)</span>
+          </a>
+          <a class="nav-link" :class="{active: currentTab === 'users'}" @click="currentTab = 'users'">
+            <i class="bi bi-people"></i>
+            <span>사용자 관리</span>
+          </a>
+          <a class="nav-link" :class="{active: currentTab === 'items'}" @click="currentTab = 'items'">
+            <i class="bi bi-check2-square"></i>
+            <span>평가 항목 관리</span>
+            <span class="badge ms-auto" :class="totalWeight === 100 ? 'bg-success' : 'bg-danger'">{{ totalWeight }}%</span>
+          </a>
+        </template>
+
+        <!-- 2) 매니저 (MANAGER) 메뉴 -->
+        <template v-if="currentUser.role === 'MANAGER'">
+          <div class="text-uppercase text-muted px-2 mb-2 fw-bold" style="font-size: 0.68rem; letter-spacing: 0.05em;">매니저 기능</div>
+          <a class="nav-link" :class="{active: currentTab === 'manager_eval'}" @click="currentTab = 'manager_eval'">
+            <i class="bi bi-pencil-square"></i>
+            <span>팀원 평가 입력</span>
+            <span class="badge bg-primary ms-auto">{{ managerCompletedCount }}/{{ managerTotalCount }}</span>
+          </a>
+        </template>
+
+        <!-- 3) 직원 (EMPLOYEE) 메뉴 -->
+        <template v-if="currentUser.role === 'EMPLOYEE'">
+          <div class="text-uppercase text-muted px-2 mb-2 fw-bold" style="font-size: 0.68rem; letter-spacing: 0.05em;">직원 기능</div>
+          <a class="nav-link" :class="{active: currentTab === 'my_score'}" @click="currentTab = 'my_score'">
+            <i class="bi bi-trophy"></i>
+            <span>내 평가 점수 조회</span>
+          </a>
+        </template>
+      </nav>
+
+      <!-- 사이드바 하단 (빠른 데모 전환 및 로그아웃) -->
+      <div class="sidebar-footer">
+        <label class="form-label text-muted small mb-1 fw-bold">데모 계정 즉시 전환</label>
+        <select class="form-select form-select-sm mb-3" :value="currentUser.role" @change="switchDemoRole($event.target.value)">
+          <option value="ADMIN">관리자 (ADMIN)</option>
+          <option value="MANAGER">매니저 (M001 김팀장)</option>
+          <option value="EMPLOYEE">직원 (E001 이개발)</option>
+        </select>
+        <button class="btn btn-outline-danger btn-sm w-100" @click="handleLogout">
+          <i class="bi bi-box-arrow-right me-1"></i> 로그아웃
+        </button>
+      </div>
+    </aside>
+
+    <!-- 오른쪽 본문 컨텐츠 영역 -->
+    <main class="content-area">
+      <!-- 상단 헤더 바 -->
+      <header class="top-header">
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-success-subtle text-success border border-success-subtle">
+            <i class="bi bi-record-fill me-1"></i>시스템 가동 중
+          </span>
+          <span class="text-muted small">2026년 정기 인사평가 (단일 점수 계산 엔진)</span>
+        </div>
+        <div class="text-muted small">
+          <i class="bi bi-clock me-1"></i>{{ todayDate }}
+        </div>
+      </header>
+
+      <!-- 페이지 본문 -->
+      <div class="main-body">
+
+        <!-- ============================================================ -->
+        <!-- [TAB 1: ADMIN - 평가 현황 및 결과] -->
+        <!-- ============================================================ -->
+        <div v-if="currentTab === 'results'">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+              <h4 class="fw-bold mb-1">인사평가 현황 및 종합 결과</h4>
+              <p class="text-muted small mb-0">전체 직원의 개인 평가 점수, 팀 보너스 점수 및 합산 최종 점수를 조회합니다.</p>
+            </div>
+            <a href="/api/admin/results/export-csv/" class="btn btn-success fw-bold" download>
+              <i class="bi bi-file-earmark-excel me-1"></i> 결과 CSV 엑셀 다운로드
+            </a>
+          </div>
+
+          <!-- KPI 카드 그리드 -->
+          <div class="row g-3 mb-4">
+            <div class="col-md-3">
+              <div class="card p-3 h-100">
+                <div class="text-muted small fw-bold">전체 평가 대상</div>
+                <div class="fs-3 fw-bold text-dark mt-1">{{ adminResults.length }} <small class="fs-6 text-muted fw-normal">명</small></div>
+                <div class="text-muted small mt-2">일반 직원(EMPLOYEE) 기준</div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card p-3 h-100">
+                <div class="text-muted small fw-bold">평가 제출 완료</div>
+                <div class="fs-3 fw-bold text-primary mt-1">{{ submittedCount }} <small class="fs-6 text-muted fw-normal">명</small></div>
+                <div class="text-muted small mt-2">매니저 최종 제출 완료 건</div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card p-3 h-100">
+                <div class="text-muted small fw-bold">평가 진행률</div>
+                <div class="fs-3 fw-bold text-success mt-1">{{ submissionRate }}%</div>
+                <div class="progress mt-2" style="height: 6px;">
+                  <div class="progress-bar bg-success" :style="{ width: submissionRate + '%' }"></div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card p-3 h-100">
+                <div class="text-muted small fw-bold">전사 평균 최종 점수</div>
+                <div class="fs-3 fw-bold text-dark mt-1">{{ averageFinalScore }} <small class="fs-6 text-muted fw-normal">점</small></div>
+                <div class="text-muted small mt-2">제출 완료된 인원 평균</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 가중치 합계 안내 배너 -->
+          <div class="alert" :class="totalWeight === 100 ? 'alert-success' : 'alert-danger'" role="alert">
+            <div class="d-flex align-items-center justify-content-between">
+              <div>
+                <i class="bi" :class="totalWeight === 100 ? 'bi-check-circle-fill me-2' : 'bi-exclamation-triangle-fill me-2'"></i>
+                <strong>평가 항목 가중치 총합: {{ totalWeight }}%</strong>
+                <span v-if="totalWeight === 100" class="ms-2">규칙(100%)에 부합하여 정상적으로 점수가 산출됩니다.</span>
+                <span v-else class="ms-2 fw-bold">가중치 합계가 100%가 아닙니다! [평가 항목 관리] 탭에서 조정해 주세요.</span>
+              </div>
+              <button class="btn btn-sm btn-outline-dark" @click="currentTab = 'items'">항목 설정 이동</button>
+            </div>
+          </div>
+
+          <!-- 평가 결과 테이블 -->
+          <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span>직원별 상세 평가 결과 목록</span>
+              <div class="input-group" style="width: 260px;">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control form-control-sm" v-model="searchQuery" placeholder="이름 또는 사번 검색">
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>사번</th>
+                    <th>성명</th>
+                    <th>소속팀</th>
+                    <th>개인 평가 점수</th>
+                    <th>팀 보너스 점수</th>
+                    <th>최종 점수</th>
+                    <th>평가 상태</th>
+                    <th>제출 일시</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="emp in filteredAdminResults" :key="emp.employee_id">
+                    <td class="fw-bold text-muted">{{ emp.employee_id }}</td>
+                    <td><strong>{{ emp.name }}</strong></td>
+                    <td><span class="badge bg-light text-dark border">{{ emp.team_name }}</span></td>
+                    <td>
+                      <span v-if="emp.personal_score !== null" class="fw-bold">{{ emp.personal_score }}점</span>
+                      <span v-else class="text-muted">—</span>
+                    </td>
+                    <td>
+                      <span class="badge bg-info-subtle text-info border border-info-subtle">+{{ emp.team_bonus }}점</span>
+                    </td>
+                    <td>
+                      <span v-if="emp.final_score !== null" class="fs-6 fw-bold text-primary">{{ emp.final_score }}점</span>
+                      <span v-else class="text-muted">—</span>
+                    </td>
+                    <td>
+                      <span class="badge" :class="statusBadgeClass(emp.status)">{{ emp.status }}</span>
+                    </td>
+                    <td class="text-muted small">{{ emp.submitted_at || '—' }}</td>
+                  </tr>
+                  <tr v-if="filteredAdminResults.length === 0">
+                    <td colspan="8" class="text-center py-4 text-muted">등록된 평가 대상 직원이 없습니다.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- [TAB 2: ADMIN - 팀 관리 & 보너스] -->
+        <!-- ============================================================ -->
+        <div v-if="currentTab === 'teams'">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+              <h4 class="fw-bold mb-1">팀 및 팀 보너스 점수 관리</h4>
+              <p class="text-muted small mb-0">팀을 추가·수정하고, 각 팀별 보너스 점수(0~10점)를 부여합니다.</p>
+            </div>
+            <button class="btn btn-primary fw-bold" @click="openTeamModal()">
+              <i class="bi bi-plus-lg me-1"></i> 새 팀 추가
+            </button>
+          </div>
+
+          <div class="card">
+            <div class="card-header">등록된 팀 목록</div>
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>ID</th>
+                    <th>팀명</th>
+                    <th>소속 인원 수</th>
+                    <th>팀 보너스 점수 (0~10점)</th>
+                    <th>보너스 부여/조정</th>
+                    <th>관리</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="team in teams" :key="team.id">
+                    <td>{{ team.id }}</td>
+                    <td class="fw-bold">{{ team.name }}</td>
+                    <td>{{ team.member_count }}명</td>
+                    <td>
+                      <span class="badge bg-warning text-dark fs-6">+{{ team.bonus_score }}점</span>
+                    </td>
+                    <td>
+                      <div class="d-flex align-items-center gap-1" style="max-width: 170px;">
+                        <input type="number" class="form-control form-control-sm" v-model.number="team.bonus_score" min="0" max="10">
+                        <button class="btn btn-sm btn-outline-primary text-nowrap" @click="saveTeamBonus(team)">저장</button>
+                      </div>
+                    </td>
+                    <td>
+                      <button class="btn btn-sm btn-outline-danger" @click="deleteTeam(team.id)">
+                        <i class="bi bi-trash"></i> 삭제
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- [TAB 3: ADMIN - 사용자 관리] -->
+        <!-- ============================================================ -->
+        <div v-if="currentTab === 'users'">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+              <h4 class="fw-bold mb-1">사용자(임직원) 관리</h4>
+              <p class="text-muted small mb-0">시스템 사용자의 사번, 이름, 역할(관리자/매니저/직원) 및 소속팀을 관리합니다.</p>
+            </div>
+            <button class="btn btn-primary fw-bold" @click="openUserModal()">
+              <i class="bi bi-person-plus me-1"></i> 새 사용자 등록
+            </button>
+          </div>
+
+          <div class="card">
+            <div class="card-header">사용자 계정 목록</div>
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>사번</th>
+                    <th>성명</th>
+                    <th>역할</th>
+                    <th>소속팀</th>
+                    <th>관리</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="u in users" :key="u.id">
+                    <td class="fw-bold">{{ u.employee_id }}</td>
+                    <td>{{ u.name }}</td>
+                    <td>
+                      <span class="badge" :class="roleBadgeClass(u.role)">{{ getRoleText(u.role) }}</span>
+                    </td>
+                    <td>{{ u.team_name || '무소속' }}</td>
+                    <td>
+                      <button class="btn btn-sm btn-outline-secondary me-1" @click="openUserModal(u)">
+                        <i class="bi bi-pencil"></i> 수정
+                      </button>
+                      <button class="btn btn-sm btn-outline-danger" @click="deleteUser(u.id)" :disabled="u.employee_id === 'ADMIN'">
+                        <i class="bi bi-trash"></i> 삭제
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- [TAB 4: ADMIN - 평가 항목 관리] -->
+        <!-- ============================================================ -->
+        <div v-if="currentTab === 'items'">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+              <h4 class="fw-bold mb-1">평가 항목 및 가중치 관리</h4>
+              <p class="text-muted small mb-0">평가 항목을 등록하고 가중치(%)를 부여합니다. 모든 활성 항목 가중치의 합계는 <strong>100%</strong>여야 합니다.</p>
+            </div>
+            <button class="btn btn-primary fw-bold" @click="openItemModal()">
+              <i class="bi bi-plus-lg me-1"></i> 새 평가 항목 추가
+            </button>
+          </div>
+
+          <!-- 가중치 합계 카드 -->
+          <div class="card p-3 mb-4" :class="totalWeight === 100 ? 'border-success' : 'border-danger'">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <h6 class="fw-bold mb-1">현재 가중치 총합계</h6>
+                <p class="text-muted small mb-0">각 평가 항목 가중치의 합산입니다. (점수 계산 시 가중치/100 비율로 적용)</p>
+              </div>
+              <div class="text-end">
+                <span class="fs-2 fw-bold" :class="totalWeight === 100 ? 'text-success' : 'text-danger'">{{ totalWeight }}%</span>
+                <div>
+                  <span v-if="totalWeight === 100" class="badge bg-success">합계 100% 정상</span>
+                  <span v-else class="badge bg-danger">합계 불일치 (조정 필요)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">평가 항목 목록</div>
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>ID</th>
+                    <th>평가 항목명</th>
+                    <th>가중치 (%)</th>
+                    <th>가중치 수정</th>
+                    <th>관리</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="it in items" :key="it.id">
+                    <td>{{ it.id }}</td>
+                    <td class="fw-bold">{{ it.title }}</td>
+                    <td>
+                      <span class="badge bg-primary fs-6">{{ it.weight }}%</span>
+                    </td>
+                    <td>
+                      <div class="d-flex align-items-center gap-1" style="max-width: 150px;">
+                        <input type="number" class="form-control form-control-sm" v-model.number="it.weight" min="1" max="100">
+                        <button class="btn btn-sm btn-outline-primary text-nowrap" @click="saveItemWeight(it)">저장</button>
+                      </div>
+                    </td>
+                    <td>
+                      <button class="btn btn-sm btn-outline-danger" @click="deleteItem(it.id)">
+                        <i class="bi bi-trash"></i> 삭제
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- [TAB 5: MANAGER - 팀원 평가] -->
+        <!-- ============================================================ -->
+        <div v-if="currentTab === 'manager_eval'">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+              <h4 class="fw-bold mb-1">팀원 인사평가 입력</h4>
+              <p class="text-muted small mb-0">소속 팀 <strong>[{{ managerTeamName }}]</strong> 팀원들의 성과를 1~5점 척도로 평가합니다.</p>
+            </div>
+            <div class="text-end">
+              <span class="badge bg-primary fs-6">평가 진행률: {{ managerProgress }}%</span>
+            </div>
+          </div>
+
+          <!-- 진행률 카드 -->
+          <div class="card p-3 mb-4">
+            <div class="d-flex justify-content-between small text-muted mb-2">
+              <span>팀원 평가 제출 현황</span>
+              <span>{{ managerCompletedCount }}명 완료 / 전체 {{ managerTotalCount }}명</span>
+            </div>
+            <div class="progress" style="height: 10px;">
+              <div class="progress-bar bg-primary" :style="{ width: managerProgress + '%' }"></div>
+            </div>
+          </div>
+
+          <!-- 팀원 목록 카드 그리드 -->
+          <div class="row g-3">
+            <div class="col-md-6" v-for="target in managerTargets" :key="target.id">
+              <div class="card h-100 p-3">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                  <div>
+                    <h5 class="fw-bold mb-0 text-dark">{{ target.name }}</h5>
+                    <span class="text-muted small">사번: {{ target.employee_id }}</span>
+                  </div>
+                  <span class="badge" :class="targetStatusBadgeClass(target.status)">
+                    {{ targetStatusText(target.status) }}
+                  </span>
+                </div>
+
+                <div class="small text-muted mb-3">
+                  <div v-if="target.status === 'SUBMITTED'">
+                    <i class="bi bi-check2-all text-success me-1"></i>최종 제출 완료: {{ target.submitted_at }}
+                  </div>
+                  <div v-else-if="target.status === 'DRAFT'">
+                    <i class="bi bi-clock-history text-warning me-1"></i>임시 저장됨 (언제든 수정 가능)
+                  </div>
+                  <div v-else>
+                    <i class="bi bi-dash-circle text-muted me-1"></i>평가 미시작
+                  </div>
+                </div>
+
+                <button class="btn mt-auto" :class="target.is_editable ? 'btn-primary' : 'btn-outline-secondary'" @click="openEvaluationModal(target)">
+                  <span v-if="target.is_editable"><i class="bi bi-pencil-square me-1"></i>평가 입력 / 수정하기</span>
+                  <span v-else><i class="bi bi-eye me-1"></i>제출 완료 점수 확인 (수정 불가)</span>
+                </button>
+              </div>
+            </div>
+            <div v-if="managerTargets.length === 0" class="col-12">
+              <div class="card p-4 text-center text-muted">
+                소속 팀에 평가 대상 직원이 없거나 팀이 배정되지 않았습니다.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- [TAB 6: EMPLOYEE - 내 평가 점수] -->
+        <!-- ============================================================ -->
+        <div v-if="currentTab === 'my_score'">
+          <div class="mb-4">
+            <h4 class="fw-bold mb-1">나의 인사평가 최종 결과</h4>
+            <p class="text-muted small mb-0">매니저의 평가 점수와 소속 팀 보너스 점수가 합산된 최종 성적표입니다.</p>
+          </div>
+
+          <div v-if="employeeResult && employeeResult.is_evaluated" class="row g-4">
+            <!-- 최종 점수 강조 카드 -->
+            <div class="col-md-5">
+              <div class="card p-4 text-center h-100 bg-primary text-white border-0 shadow">
+                <div class="text-uppercase small fw-bold opacity-75 mb-2">2026 FINAL SCORE</div>
+                <h1 class="display-2 fw-bold my-3">{{ employeeResult.final_score }}</h1>
+                <div class="fs-5 fw-semibold mb-3">100점 만점 기준</div>
+                <div class="mt-auto">
+                  <span class="badge bg-white text-primary px-3 py-2 fs-6">평가 확정 완료</span>
+                  <div class="small opacity-75 mt-2">제출 일시: {{ employeeResult.submitted_at }}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 점수 산출 상세 내역 카드 -->
+            <div class="col-md-7">
+              <div class="card p-4 h-100">
+                <h5 class="fw-bold mb-3">점수 산출 상세 내역</h5>
+                
+                <div class="list-group list-group-flush mb-3">
+                  <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                    <div>
+                      <div class="fw-bold">개인 평가 점수</div>
+                      <div class="text-muted small">각 평가 항목의 (점수 ÷ 5 × 가중치) 합산</div>
+                    </div>
+                    <span class="fs-5 fw-bold text-dark">{{ employeeResult.personal_score }}점</span>
+                  </div>
+
+                  <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                    <div>
+                      <div class="fw-bold">소속 팀 보너스 점수</div>
+                      <div class="text-muted small">[{{ employeeResult.team_name }}] 부여 보너스 (0~10점)</div>
+                    </div>
+                    <span class="fs-5 fw-bold text-success">+{{ employeeResult.team_bonus }}점</span>
+                  </div>
+
+                  <div class="list-group-item d-flex justify-content-between align-items-center py-3 bg-light rounded">
+                    <div>
+                      <div class="fw-bold text-primary">최종 합산 점수</div>
+                      <div class="text-muted small">개인 점수 + 팀 보너스 (최대 100점)</div>
+                    </div>
+                    <span class="fs-4 fw-bold text-primary">{{ employeeResult.final_score }}점</span>
+                  </div>
+                </div>
+
+                <div class="alert alert-light border small text-muted mb-0">
+                  <i class="bi bi-info-circle me-1"></i>
+                  <strong>점수 산출 공식:</strong> 최종 점수 = min(100, max(0, 개인 평가 점수 + 팀 보너스 점수))
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 미제출 상태 -->
+          <div v-else class="card p-5 text-center text-muted">
+            <div class="d-inline-flex p-3 rounded-circle bg-light text-secondary mx-auto mb-3">
+              <i class="bi bi-hourglass-split fs-1"></i>
+            </div>
+            <h5 class="fw-bold text-dark">평가가 아직 제출되지 않았습니다</h5>
+            <p class="text-muted mb-0">현재 매니저가 평가를 진행 중입니다. 최종 제출이 완료되면 이곳에서 점수를 확인하실 수 있습니다.</p>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- [MODALS] -->
+  <!-- ============================================================ -->
+
+  <!-- 1. 매니저 평가 입력 모달 -->
+  <div v-if="selectedTarget" class="custom-modal-backdrop" @click.self="selectedTarget = null">
+    <div class="custom-modal">
+      <div class="modal-header p-3 border-bottom d-flex justify-content-between align-items-center">
+        <h5 class="modal-title fw-bold mb-0">
+          <i class="bi bi-pencil-square text-primary me-1"></i>
+          {{ selectedTarget.name }} 님 평가 입력
+        </h5>
+        <button type="button" class="btn-close" @click="selectedTarget = null"></button>
+      </div>
+
+      <div class="p-3">
+        <!-- 상단 주의사항 -->
+        <div v-if="!modalEditable" class="alert alert-secondary py-2 small mb-3">
+          <i class="bi bi-lock-fill me-1"></i> 이미 제출이 완료된 평가이므로 점수를 수정할 수 없습니다. (중복 응답 방지)
+        </div>
+        <div v-else class="alert alert-warning py-2 small mb-3">
+          <i class="bi bi-exclamation-triangle-fill me-1"></i> 
+          <strong>주의:</strong> [최종 제출]을 누르면 평가가 확정되어 더 이상 수정할 수 없습니다.
+        </div>
+
+        <!-- 실시간 예상 개인 점수 미리보기 바 -->
+        <div class="card p-2 mb-3 bg-light text-center">
+          <span class="small text-muted">현재 입력 점수 기준 예상 개인 점수:</span>
+          <span class="fs-4 fw-bold text-primary">{{ previewPersonalScore }} 점</span>
+          <span class="small text-muted">(각 항목의 점수 ÷ 5 × 가중치 합산)</span>
+        </div>
+
+        <!-- 평가 항목 목록 -->
+        <div v-for="it in modalScores" :key="it.item_id" class="card p-3 mb-3">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="fw-bold">{{ it.title }}</span>
+            <span class="badge bg-secondary">가중치 {{ it.weight }}%</span>
+          </div>
+
+          <!-- 1~5점 라디오 버튼 그룹 -->
+          <div class="btn-group w-100" role="group">
+            <template v-for="scoreVal in [1, 2, 3, 4, 5]" :key="scoreVal">
+              <input type="radio" 
+                     class="btn-check" 
+                     :name="'item_' + it.item_id" 
+                     :id="'score_' + it.item_id + '_' + scoreVal" 
+                     :value="scoreVal" 
+                     v-model.number="it.score"
+                     :disabled="!modalEditable">
+              <label class="btn" 
+                     :class="it.score === scoreVal ? 'btn-primary' : 'btn-outline-secondary'" 
+                     :for="'score_' + it.item_id + '_' + scoreVal">
+                {{ scoreVal }}점<br>
+                <small style="font-size: 0.65rem;">
+                  {{ ['매우미흡', '미흡', '보통', '우수', '매우우수'][scoreVal - 1] }}
+                </small>
+              </label>
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-3 border-top d-flex justify-content-between align-items-center bg-light">
+        <button type="button" class="btn btn-outline-secondary" @click="selectedTarget = null">닫기</button>
+        <div v-if="modalEditable" class="d-flex gap-2">
+          <button type="button" class="btn btn-warning fw-bold text-dark" @click="submitEvaluation('DRAFT')" :disabled="isSubmitting">
+            <i class="bi bi-save me-1"></i> 임시 저장
+          </button>
+          <button type="button" class="btn btn-primary fw-bold" @click="submitEvaluation('SUBMITTED')" :disabled="isSubmitting || !allItemsScored">
+            <i class="bi bi-check-circle me-1"></i> 최종 제출
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 팀 추가 모달 -->
+  <div v-if="showTeamModal" class="custom-modal-backdrop" @click.self="showTeamModal = false">
+    <div class="custom-modal" style="max-width: 420px;">
+      <div class="modal-header p-3 border-bottom d-flex justify-content-between align-items-center">
+        <h5 class="modal-title fw-bold mb-0">새 팀 추가</h5>
+        <button type="button" class="btn-close" @click="showTeamModal = false"></button>
+      </div>
+      <form @submit.prevent="saveNewTeam" class="p-3">
+        <div class="mb-3">
+          <label class="form-label small fw-bold">팀명</label>
+          <input type="text" class="form-control" v-model="newTeamName" placeholder="예: 전략기획팀" required autofocus>
+        </div>
+        <div class="d-flex justify-content-end gap-2">
+          <button type="button" class="btn btn-outline-secondary" @click="showTeamModal = false">취소</button>
+          <button type="submit" class="btn btn-primary fw-bold">추가</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3. 사용자 추가/수정 모달 -->
+  <div v-if="showUserModal" class="custom-modal-backdrop" @click.self="showUserModal = false">
+    <div class="custom-modal" style="max-width: 460px;">
+      <div class="modal-header p-3 border-bottom d-flex justify-content-between align-items-center">
+        <h5 class="modal-title fw-bold mb-0">{{ userForm.id ? '사용자 정보 수정' : '새 사용자 등록' }}</h5>
+        <button type="button" class="btn-close" @click="showUserModal = false"></button>
+      </div>
+      <form @submit.prevent="saveUser" class="p-3">
+        <div class="mb-3">
+          <label class="form-label small fw-bold">사번 (Employee ID)</label>
+          <input type="text" class="form-control" v-model="userForm.employee_id" :disabled="!!userForm.id" placeholder="예: E004" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-bold">성명</label>
+          <input type="text" class="form-control" v-model="userForm.name" placeholder="예: 홍길동" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-bold">역할 (Role)</label>
+          <select class="form-select" v-model="userForm.role">
+            <option value="ADMIN">관리자 (ADMIN)</option>
+            <option value="MANAGER">매니저 (MANAGER)</option>
+            <option value="EMPLOYEE">직원 (EMPLOYEE)</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-bold">소속팀</label>
+          <select class="form-select" v-model="userForm.team">
+            <option :value="null">무소속 (또는 전사)</option>
+            <option v-for="t in teams" :key="t.id" :value="t.id">{{ t.name }}</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-bold">비밀번호 {{ userForm.id ? '(변경 시에만 입력)' : '' }}</label>
+          <input type="password" class="form-control" v-model="userForm.password" :placeholder="userForm.id ? '기존 비밀번호 유지' : '기본 비밀번호 (미입력 시 1234)'">
+        </div>
+        <div class="d-flex justify-content-end gap-2">
+          <button type="button" class="btn btn-outline-secondary" @click="showUserModal = false">취소</button>
+          <button type="submit" class="btn btn-primary fw-bold">저장</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 4. 평가 항목 추가 모달 -->
+  <div v-if="showItemModal" class="custom-modal-backdrop" @click.self="showItemModal = false">
+    <div class="custom-modal" style="max-width: 440px;">
+      <div class="modal-header p-3 border-bottom d-flex justify-content-between align-items-center">
+        <h5 class="modal-title fw-bold mb-0">새 평가 항목 추가</h5>
+        <button type="button" class="btn-close" @click="showItemModal = false"></button>
+      </div>
+      <form @submit.prevent="saveNewItem" class="p-3">
+        <div class="mb-3">
+          <label class="form-label small fw-bold">평가 항목명</label>
+          <input type="text" class="form-control" v-model="newItemForm.title" placeholder="예: 창의성 및 문제해결능력" required autofocus>
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-bold">가중치 (%)</label>
+          <input type="number" class="form-control" v-model.number="newItemForm.weight" min="1" max="100" placeholder="예: 20" required>
+        </div>
+        <div class="d-flex justify-content-end gap-2">
+          <button type="button" class="btn btn-outline-secondary" @click="showItemModal = false">취소</button>
+          <button type="submit" class="btn btn-primary fw-bold">추가</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<!-- Vue 3 애플리케이션 스크립트 -->
+<script>
+  const { createApp, ref, computed, onMounted } = Vue;
+
+  createApp({
+    setup() {
+      // 1. 상태 변수
+      const currentUser = ref(null);
+      const currentTab = ref('results');
+      const toastMessage = ref('');
+      const isSubmitting = ref(false);
+      const loginError = ref('');
+      const loginForm = ref({ employee_id: '', password: '' });
+
+      // 오늘 날짜 표시
+      const todayDate = computed(() => {
+        const d = new Date();
+        return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+      });
+
+      // 데이터 목록
+      const teams = ref([]);
+      const users = ref([]);
+      const items = ref([]);
+      const adminResults = ref([]);
+      const searchQuery = ref('');
+
+      // 매니저 전용 상태
+      const managerTeamName = ref('');
+      const managerTargets = ref([]);
+      const managerTotalCount = ref(0);
+      const managerCompletedCount = ref(0);
+      const managerProgress = ref(0);
+
+      // 직원 전용 상태
+      const employeeResult = ref(null);
+
+      // 모달 상태
+      const selectedTarget = ref(null);
+      const modalEditable = ref(true);
+      const modalScores = ref([]);
+
+      const showTeamModal = ref(false);
+      const newTeamName = ref('');
+
+      const showUserModal = ref(false);
+      const userForm = ref({ id: null, employee_id: '', name: '', role: 'EMPLOYEE', team: null, password: '' });
+
+      const showItemModal = ref(false);
+      const newItemForm = ref({ title: '', weight: 20 });
+
+      // 유틸 토스트
+      const showToast = (msg) => {
+        toastMessage.value = msg;
+        setTimeout(() => { toastMessage.value = ''; }, 3500);
+      };
+
+      // 텍스트 & 배지 헬퍼
+      const getRoleText = (role) => {
+        if (role === 'ADMIN') return '관리자';
+        if (role === 'MANAGER') return '매니저';
+        return '직원';
+      };
+
+      const roleBadgeClass = (role) => {
+        if (role === 'ADMIN') return 'bg-dark text-white';
+        if (role === 'MANAGER') return 'bg-primary text-white';
+        return 'bg-success text-white';
+      };
+
+      const statusBadgeClass = (st) => {
+        if (st === '제출완료') return 'bg-success text-white';
+        if (st === '임시저장') return 'bg-warning text-dark';
+        return 'bg-secondary text-white';
+      };
+
+      const targetStatusBadgeClass = (st) => {
+        if (st === 'SUBMITTED') return 'bg-success text-white';
+        if (st === 'DRAFT') return 'bg-warning text-dark';
+        return 'bg-secondary text-white';
+      };
+
+      const targetStatusText = (st) => {
+        if (st === 'SUBMITTED') return '제출 완료';
+        if (st === 'DRAFT') return '임시 저장';
+        return '미시작';
+      };
+
+      // CSRF 토큰 추출 유틸
+      const getCsrfToken = () => {
+        const match = document.cookie.match(/csrftoken=([^;]+)/);
+        return match ? match[1] : '';
+      };
+
+      // 2. 인증 관련 메서드
+      const quickLogin = async (id, pw) => {
+        loginForm.value.employee_id = id;
+        loginForm.value.password = pw;
+        await handleLogin();
+      };
+
+      const checkAuth = async () => {
+        try {
+          const res = await fetch('/api/auth/me/');
+          const data = await res.json();
+          if (data && data.user) {
+            currentUser.value = data.user;
+            setInitialTab();
+            loadAllData();
+          }
+        } catch (e) {
+          console.error('인증 상태 확인 실패:', e);
+        }
+      };
+
+      const handleLogin = async () => {
+        isSubmitting.value = true;
+        loginError.value = '';
+        try {
+          const res = await fetch('/api/auth/login/', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify(loginForm.value)
+          });
+          const data = await res.json();
+          if (res.ok) {
+            currentUser.value = data.user;
+            setInitialTab();
+            loadAllData();
+            showToast(`${data.user.name}님 환영합니다!`);
+          } else {
+            loginError.value = data.detail || '로그인에 실패했습니다.';
+          }
+        } catch (e) {
+          loginError.value = '서버 연결에 실패했습니다.';
+        } finally {
+          isSubmitting.value = false;
+        }
+      };
+
+      const handleLogout = async () => {
+        try {
+          await fetch('/api/auth/logout/', { method: 'POST' });
+        } catch (e) {}
+        currentUser.value = null;
+        loginForm.value = { employee_id: '', password: '' };
+        showToast('로그아웃되었습니다.');
+      };
+
+      const setInitialTab = () => {
+        if (!currentUser.value) return;
+        if (currentUser.value.role === 'ADMIN') currentTab.value = 'results';
+        else if (currentUser.value.role === 'MANAGER') currentTab.value = 'manager_eval';
+        else currentTab.value = 'my_score';
+      };
+
+      const switchDemoRole = async (targetRole) => {
+        let demoId = 'ADMIN';
+        let demoPw = 'admin1234!';
+        if (targetRole === 'MANAGER') { demoId = 'M001'; demoPw = '1234'; }
+        else if (targetRole === 'EMPLOYEE') { demoId = 'E001'; demoPw = '1234'; }
+
+        loginForm.value.employee_id = demoId;
+        loginForm.value.password = demoPw;
+        await handleLogin();
+      };
+
+      // 3. 데이터 로딩
+      const loadAllData = () => {
+        if (!currentUser.value) return;
+        if (currentUser.value.role === 'ADMIN') {
+          fetchAdminResults();
+          fetchTeams();
+          fetchUsers();
+          fetchItems();
+        } else if (currentUser.value.role === 'MANAGER') {
+          fetchManagerTargets();
+        } else if (currentUser.value.role === 'EMPLOYEE') {
+          fetchEmployeeResult();
+        }
+      };
+
+      const fetchAdminResults = async () => {
+        try {
+          const res = await fetch('/api/admin/results/');
+          adminResults.value = await res.json();
+        } catch (e) { console.error(e); }
+      };
+
+      const fetchTeams = async () => {
+        try {
+          const res = await fetch('/api/teams/');
+          teams.value = await res.json();
+        } catch (e) { console.error(e); }
+      };
+
+      const fetchUsers = async () => {
+        try {
+          const res = await fetch('/api/users/');
+          users.value = await res.json();
+        } catch (e) { console.error(e); }
+      };
+
+      const fetchItems = async () => {
+        try {
+          const res = await fetch('/api/items/');
+          const data = await res.json();
+          items.value = data.items || [];
+        } catch (e) { console.error(e); }
+      };
+
+      const fetchManagerTargets = async () => {
+        try {
+          const res = await fetch('/api/manager/targets/');
+          const data = await res.json();
+          managerTeamName.value = data.team_name || '';
+          managerTargets.value = data.targets || [];
+          managerTotalCount.value = data.total_count || 0;
+          managerCompletedCount.value = data.completed_count || 0;
+          managerProgress.value = data.progress_rate || 0;
+        } catch (e) { console.error(e); }
+      };
+
+      const fetchEmployeeResult = async () => {
+        try {
+          const res = await fetch('/api/employee/result/');
+          employeeResult.value = await res.json();
+        } catch (e) { console.error(e); }
+      };
+
+      // 4. 관리자 기능: 팀 & 보너스 & 항목 & 유저 CRUD
+      const openTeamModal = () => {
+        newTeamName.value = '';
+        showTeamModal.value = true;
+      };
+
+      const saveNewTeam = async () => {
+        if (!newTeamName.value.trim()) return;
+        await fetch('/api/teams/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: newTeamName.value.trim(), bonus_score: 5 })
+        });
+        showTeamModal.value = false;
+        fetchTeams();
+        showToast('새 팀이 추가되었습니다.');
+      };
+
+      const saveTeamBonus = async (team) => {
+        await fetch(`/api/teams/${team.id}/`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bonus_score: team.bonus_score })
+        });
+        showToast(`${team.name} 보너스 점수가 저장되었습니다.`);
+        fetchAdminResults();
+      };
+
+      const deleteTeam = async (id) => {
+        if (!confirm('팀을 삭제하시겠습니까? 소속 유저는 무소속 처리됩니다.')) return;
+        await fetch(`/api/teams/${id}/`, { method: 'DELETE' });
+        fetchTeams();
+        showToast('팀이 삭제되었습니다.');
+      };
+
+      const openUserModal = (u = null) => {
+        if (u) {
+          userForm.value = { id: u.id, employee_id: u.employee_id, name: u.name, role: u.role, team: u.team, password: '' };
+        } else {
+          userForm.value = { id: null, employee_id: '', name: '', role: 'EMPLOYEE', team: null, password: '' };
+        }
+        showUserModal.value = true;
+      };
+
+      const saveUser = async () => {
+        const url = userForm.value.id ? `/api/users/${userForm.value.id}/` : '/api/users/';
+        const method = userForm.value.id ? 'PATCH' : 'POST';
+        const payload = { ...userForm.value };
+        if (!payload.password) delete payload.password;
+
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          showUserModal.value = false;
+          fetchUsers();
+          fetchAdminResults();
+          showToast('사용자 정보가 저장되었습니다.');
+        } else {
+          const err = await res.json();
+          alert(JSON.stringify(err));
+        }
+      };
+
+      const deleteUser = async (id) => {
+        if (!confirm('사용자를 삭제하시겠습니까?')) return;
+        await fetch(`/api/users/${id}/`, { method: 'DELETE' });
+        fetchUsers();
+        fetchAdminResults();
+        showToast('사용자가 삭제되었습니다.');
+      };
+
+      const openItemModal = () => {
+        newItemForm.value = { title: '', weight: 20 };
+        showItemModal.value = true;
+      };
+
+      const saveNewItem = async () => {
+        await fetch('/api/items/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newItemForm.value)
+        });
+        showItemModal.value = false;
+        fetchItems();
+        showToast('평가 항목이 추가되었습니다.');
+      };
+
+      const saveItemWeight = async (item) => {
+        await fetch(`/api/items/${item.id}/`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ weight: item.weight })
+        });
+        fetchItems();
+        fetchAdminResults();
+        showToast('가중치가 수정되었습니다.');
+      };
+
+      const deleteItem = async (id) => {
+        if (!confirm('평가 항목을 삭제하시겠습니까?')) return;
+        await fetch(`/api/items/${id}/`, { method: 'DELETE' });
+        fetchItems();
+        showToast('평가 항목이 비활성화되었습니다.');
+      };
+
+      // 5. 매니저 평가 기능
+      const openEvaluationModal = async (target) => {
+        selectedTarget.value = target;
+        try {
+          const res = await fetch(`/api/manager/evaluations/${target.employee_id}/`);
+          const data = await res.json();
+          modalEditable.value = data.is_editable;
+          modalScores.value = data.scores.map(s => ({
+            item_id: s.item_id,
+            title: s.title,
+            weight: s.weight,
+            score: s.score || 0
+          }));
+        } catch (e) {
+          console.error(e);
+        }
+      };
+
+      // 실시간 예상 개인 점수 미리보기 계산
+      const previewPersonalScore = computed(() => {
+        if (!modalScores.value || modalScores.value.length === 0) return 0;
+        let sum = 0;
+        modalScores.value.forEach(s => {
+          if (s.score >= 1 && s.score <= 5) {
+            sum += (s.score / 5.0) * s.weight;
+          }
+        });
+        return Math.round(sum * 100) / 100;
+      });
+
+      const allItemsScored = computed(() => {
+        return modalScores.value.length > 0 && modalScores.value.every(s => s.score >= 1 && s.score <= 5);
+      });
+
+      const submitEvaluation = async (action) => {
+        if (action === 'SUBMITTED' && !confirm('최종 제출 후에는 수정이 불가능합니다. 정말 제출하시겠습니까?')) {
+          return;
+        }
+        isSubmitting.value = true;
+        try {
+          const res = await fetch(`/api/manager/evaluations/${selectedTarget.value.employee_id}/save/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action,
+              scores: modalScores.value
+            })
+          });
+          const data = await res.json();
+          if (res.ok) {
+            showToast(data.message);
+            selectedTarget.value = null;
+            fetchManagerTargets();
+          } else {
+            alert(data.detail || '저장에 실패했습니다.');
+          }
+        } catch (e) {
+          alert('서버 연결 오류');
+        } finally {
+          isSubmitting.value = false;
+        }
+      };
+
+      // 6. 계산된 속성들
+      const totalWeight = computed(() => items.value.reduce((sum, it) => sum + (it.weight || 0), 0));
+      const submittedCount = computed(() => adminResults.value.filter(r => r.status === '제출완료').length);
+      const submissionRate = computed(() => {
+        if (adminResults.value.length === 0) return 0;
+        return Math.round((submittedCount.value / adminResults.value.length) * 100);
+      });
+      const averageFinalScore = computed(() => {
+        const evals = adminResults.value.filter(r => r.final_score !== null);
+        if (evals.length === 0) return '—';
+        const sum = evals.reduce((acc, r) => acc + r.final_score, 0);
+        return (sum / evals.length).toFixed(1);
+      });
+
+      const filteredAdminResults = computed(() => {
+        if (!searchQuery.value) return adminResults.value;
+        const q = searchQuery.value.toLowerCase();
+        return adminResults.value.filter(r => 
+          (r.name && r.name.toLowerCase().includes(q)) || 
+          (r.employee_id && r.employee_id.toLowerCase().includes(q))
+        );
+      });
+
+      onMounted(() => {
+        checkAuth();
+      });
+
+      return {
+        currentUser, currentTab, toastMessage, isSubmitting, loginError, loginForm, todayDate,
+        teams, users, items, adminResults, searchQuery, filteredAdminResults,
+        managerTeamName, managerTargets, managerTotalCount, managerCompletedCount, managerProgress,
+        employeeResult,
+        selectedTarget, modalEditable, modalScores, previewPersonalScore, allItemsScored,
+        showTeamModal, newTeamName,
+        showUserModal, userForm,
+        showItemModal, newItemForm,
+        totalWeight, submittedCount, submissionRate, averageFinalScore,
+        getRoleText, roleBadgeClass, statusBadgeClass, targetStatusBadgeClass, targetStatusText,
+        quickLogin, handleLogin, handleLogout, switchDemoRole,
+        openTeamModal, saveNewTeam, saveTeamBonus, deleteTeam,
+        openUserModal, saveUser, deleteUser,
+        openItemModal, saveNewItem, saveItemWeight, deleteItem,
+        openEvaluationModal, submitEvaluation
+      };
+    }
+  }).mount('#app');
+</script>
+
+</body>
+</html>
